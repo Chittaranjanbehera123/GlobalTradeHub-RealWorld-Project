@@ -765,20 +765,6 @@ Please refer to the [TESTING.md](TESTING.md) file for all test-related documenta
 
 ---
 
-
-
-## Deployment and Payment setup
-
-- The app was deployed to [Render](https://render.com/).
-- The database was deployed to [ElephantSQL](https://www.elephantsql.com/).
-
-- The app can be reached by the [link](https://wowder.onrender.com).
-
-
-Please refer to the [DEPLOYMENT.md](DEPLOYMENT.md) file for all deployment and payment-related documentation.
-
----
-
 ## Credits
 
 - [GitHub](https://github.com/) for giving the idea of the project's design.
@@ -823,8 +809,3 @@ Please refer to the [DEPLOYMENT.md](DEPLOYMENT.md) file for all deployment and p
 - [LG electronics](https://www.lg.com/): for providing free products' data and images to fill out the store with electronics.
 ---
 
-## Acknowledgments
-
-- [Tim Nelson](https://github.com/TravelTimN) was a great supporter of another bold idea of mine for this project. Tim guided me through the development of the project and helped me to learn a lot of new things by challenging me to do something new.
-- [Aleksei Konovalov](https://github.com/lexach91), my husband and coding partner, assisted me greatly in product values js selection control implementation and helped me to stay sane.
-- [Very Academy Youtube Channel](https://www.youtube.com/c/veryacademy) provided great insight on the implementation of the database with multi-values products, precise explanations of the stripe API, and many other things! This Youtube channel has plenty of brilliant tutorials that shed light on Django's most curious and useful aspects.
