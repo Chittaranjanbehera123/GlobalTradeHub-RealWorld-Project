@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+  .dashboard__form.form__delete {
+    max-width: 25rem;
+    text-align: center;
+    margin-top: 4em;
+  }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Access Error{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    <div class="dashboard__form form__delete">
+      <h1 class="dashboard__main--name">Access denied</h1>
+      <div class="access__image">
+        <img src="{% static 'images/access_denied.png' %}" alt="Access denied warning image">
+      </div>
+      <strong>You do not have permission to access this page.</strong>
+    </div>
+  </div>
+{% endblock %}

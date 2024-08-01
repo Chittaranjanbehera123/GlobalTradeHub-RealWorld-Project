@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Delete Value{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Accessible only to admin {% endcomment %}
+    {% if request.user.is_authenticated and request.user.profile.role.id == 3 %}
+      {% comment %} Delete Product Attribute Value form {% endcomment %}
+      <div class="dashboard__main dashboard__form">
+        {% comment %} Form title {% endcomment %}
+        <h1 class="dashboard__main--name">Delete Attribute Value</h1>
+        {% comment %} Warning messages {% endcomment %}
+        <div class="warning__msg">
+          <p>If you delete this value, all stock units with this value will be be deleted. Are you sure you want to delete this product attribute value?</p>
+          {% if attribute_value.attributevalues.all %}
+            <strong>
+              Please, note! The following product attribute assigned to {{ attribute_value.attributevalues.count }} different stock units !
+            </strong>
+          {% else %}
+            <p>This product attribute value is not assigned to any stock units.</p>
+          {% endif %}
+        </div>
+        <strong class="warning__msg--request">Deletion is forbidden!</strong>
+        <p>If you want to delete this value, please, contact with administrator.</p>
+        {% comment %} Form control button {% endcomment %}
+        <div class="form__btns accent">
+          <a href="{% url 'attribute_values' %}" aria-label="Go to Product Attributes page" class="btn btn__cancel">
+            <i class="fas fa-arrow-circle-left"></i>
+            Go back
+          </a>
+        </div>
+      </div>
+    {% else %}
+      {% comment %} User doesn't have an access {% endcomment %}
+      <div class="dashboard__main">
+        <h1>You are not authorized to access this page</h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

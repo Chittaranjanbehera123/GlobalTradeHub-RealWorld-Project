@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .btn i {
+      margin-right: 0 !important;
+    }
+
+    .search__navbar {
+      background-color: transparent !important;
+    }
+
+    .search__container {
+      width: 100% !important;
+    }
+
+    .search__input {
+      padding: 0.5em 0.5em !important;
+      width: 100% !important;
+    }
+
+    .search__input input {
+      border: 1px solid #363636 !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Types{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Limit access for customers {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <section class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          Product types
+        </h1>
+        {% comment %} Add new product type button {% endcomment %}
+        <a href="{% url 'add_product_type' %}" aria-label="Go to add new product Type" class="btn btn__add">
+          <i class="fas fa-plus-circle"></i>
+          Add New Product Type
+        </a>
+      </section>
+      {% comment %} Search product type by input {% endcomment %}
+      <div class="search__navbar">
+        <div class="search__container">
+          <form class="search__input" id="search-all">
+            {% csrf_token %}
+            <input type="text" name="search_query" placeholder="Search..." id="sort-selector">
+            <button type="submit" id="search-btn" aria-label="Search" class="btn btn__search">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% comment %} Products types table {% endcomment %}
+      <div class="types__all">
+        {% for type in product_types %}
+          <div class="type__details">
+            <strong>{{ type.name }}</strong>
+            ({{ type.description|truncatechars:27 }})
+            <div class="type_attributes">
+              {% if type.product_type_attributes.all %}
+                <div class="dropdown">
+                  <button class="btn btn__dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>{{ type.product_type_attributes.count }}</strong> Attributes
+                  </button>
+                  <ul class="dropdown-menu">
+                    {% for attribute in type.product_type_attributes.all %}
+                      <li><a class="dropdown-item" href="#">{{ attribute.name }}</a></li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% else %}
+                <span>(No attributes)</span>
+              {% endif %}
+            </div>
+            <div class="type__buttons">
+              <a href="{% url 'edit_product_type' pk=type.id %}"
+                  aria-label="Edit product attribute page" class="btn btn__edit">
+                <i class="fas fa-edit"></i>
+                Edit
+              </a>
+              {% if request.user.profile.role.id == 3 %}
+                <a href="{% url 'delete_product_type' pk=type.id %}"
+                    aria-label="Edit product attribute page" class="btn btn__delete">
+                  <i class="fas fa-trash-alt"></i>
+                  Delete
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% comment %} User is a customer {% endcomment %}
+      <h1>You are not authorized to view this page</h1>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+        window.location.replace(window.location.origin + "/personnel/product_types_table/");
+      }
+    });
+  </script>
+{% endblock %}

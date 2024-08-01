@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}All Orders{% endblock %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .btn i {
+      margin-right: 0 !important;
+    }
+
+    .search__navbar {
+      background-color: transparent !important;
+    }
+
+    .search__input {
+      padding-left:0.5em;
+    }
+
+    .search__select {
+      padding-right:0.5em;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Limit access for customers {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">All Orders</h1>
+      </div>
+      <div class="search__navbar">
+        <div class="search__container">
+          <form class="search__input" id="search-all">
+            {% csrf_token %}
+            <input type="text" name="search_query" placeholder="Search..." id="sort-selector">
+            <button type="submit" id="search-btn" aria-label="Search" class="btn btn__search">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+          {% comment %} create form to click on category {% endcomment %}
+          <form  class="search__select" id="search-status">
+            {% csrf_token %}
+            {% comment %} <div class="form-group"> {% endcomment %}
+              <label for="status"></label>
+              <select class="form-control" id="status" name="search_query">
+                <option value="">Order Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="Completed">Completed</option>
+                <option value="Refunded">Refunded</option>
+              </select>
+            {% comment %} </div> {% endcomment %}
+            <button type="submit" id="category-btn" aria-label="Search" class="btn btn__search">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% comment %} All orders {% endcomment %}
+      <div class="data__main--orders">
+        {% if orders %}
+          {% for order in orders %}
+            <a href="{% url 'order_details' order_id=order.id %}" aria-label="View order details" class="data__main--order list">
+              <div>
+                <strong>Order ID: </strong> {{ order.id }}
+              </div>
+              <div>
+                <strong>Order Number: </strong> {{ order.order_number|truncatechars:15 }}
+              </div>
+              <div>
+                <strong>Order Key: </strong> {{ order.order_key|truncatechars:15 }}
+              </div>
+              <div>
+                <strong>Order Date: </strong> {{ order.created|date:"d.m.Y" }}
+              </div>
+              <div>
+                <strong>Order Total: </strong> {{ order.total_paid }}
+              </div>
+              <div>
+                <strong>Paid: </strong>
+                <div>
+                  {% if order.billing_status %}
+                    <i class="fa fa-check-circle"></i>
+                  {% else %}
+                    <i class="fa fa-times-circle"></i>
+                  {% endif %}
+                </div>
+              </div>
+              {% comment %} Order status section {% endcomment %}
+              <div>
+                <strong>Order Status: </strong>
+                {% if order.status == 'Pending' %}
+                  <div class="order__status" data-status="pending">
+                    PENDING
+                  </div>
+                {% elif order.status == 'Processing' %}
+                  <div class="order__status" data-status="processing">
+                    PROCESSING
+                  </div>
+                {% elif order.status == 'shipped' %}
+                  <div class="order__status" data-status="delivery">
+                    IN DELIVERY
+                  </div>
+                {% elif order.status == 'Refunded' %}
+                  <div class="order__status" data-status="refunded">
+                    REFUNDED
+                  </div>
+                {% else %}
+                  <div class="order__status" data-status="completed">
+                    COMPLETED
+                  </div>
+                {% endif %}
+              </div>
+            </a>
+          {% endfor %}
+          {% comment %} Control Pagination {% endcomment %}
+          {% if orders.paginator.num_pages %}
+            {% if not orders.paginator.num_pages == 1 %}
+              <div class="pagination">
+                <div class="pagination__navigation">
+                  {% if orders.has_previous and not orders.has_next %}
+                    <a href="?page={{ orders.previous_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to previous page results">
+                      <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-right"></i>
+                    </div>
+                  {% elif orders.has_next and not orders.has_previous %}
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <a href="?page={{ orders.next_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to next page results">
+                      <i class="fas fa-chevron-right"></i>
+                    </a>
+                  {% elif orders.has_next and orders.has_previous %}
+                    <a href="?page={{ orders.previous_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to previous page results">
+                      <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a href="?page={{ orders.next_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to next page results">
+                      <i class="fas fa-chevron-right"></i>
+                    </a>
+                  {% else %}
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-right"></i>
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="pagination__location">
+                  Page <span>{{ orders.number }}</span> of {{ orders.paginator.num_pages }}
+                </div>
+              </div>
+            {% endif %}
+          {% endif %}
+        {% else %}
+          <p>No orders found.</p>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="dashboard__main">
+        <h1>You are not authorized to access this page</h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+        console. info( "This page is reloaded" );
+        window.location.replace(window.location.origin + "/orders/");
+      }
+    });
+  </script>
+{% endblock %}

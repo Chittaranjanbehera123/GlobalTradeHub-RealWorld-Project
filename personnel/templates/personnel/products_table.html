@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .dashboard__main strong {
+      margin-bottom: 0.4em;
+    }
+    
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .btn i {
+      margin-right: 0 !important;
+    }
+
+    .search__navbar {
+      background-color: transparent !important;
+      margin-top: 0.5em !important;
+    }
+
+    .search__container {
+      width: 100% !important;
+    }
+
+    .search__input {
+      padding: 0.5em 0 !important;
+      width: 100% !important;
+    }
+
+    .search__input input {
+      border: 1px solid #363636 !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Products{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Limit access for customers {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <section class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          All products table
+        </h1>
+        <strong>( {{ products_count }}  products found )</strong>
+        {% comment %} Add new product button {% endcomment %}
+        <a href="{% url 'add_product' %}" aria-label="Go to add new product page" class="btn btn-primary btn__add">
+          <i class="fas fa-plus-circle"></i>
+          Add new product
+        </a>
+      </section>
+      {% comment %} Search product type by input {% endcomment %}
+      <div class="search__navbar">
+        <div class="search__container">
+          <form class="search__input" id="search-all">
+            {% csrf_token %}
+            <input type="text" name="search_query" placeholder="Search ..." id="sort-selector">
+            <button type="submit" id="search-btn" aria-label="Search" class="btn btn__search">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% comment %} Products' table for personnel {% endcomment %}
+      <div class="products__table product__table__personnel">
+        <div class="products__table--row table__titles">
+          <div class="products__table--cell">ID</div>
+          <div class="products__table--cell">Name</div>
+          <div class="products__table--cell">Category</div>
+          <div class="products__table--cell">Tags</div>
+          <div class="products__table--cell">Brand</div>
+          <div class="products__table--cell">Img</div>
+          <div class="products__table--cell">Sale</div>
+          <div class="products__table--cell">PI</div>
+        </div>
+        {% comment %} All products table {% endcomment %}
+        {% for product in products %}
+          <a class="products__table--row" href="{% url 'product_detail_full' pk=product.id %}" aria-label="Go to product detail page">
+            <div class="products__table--cell">
+              {% comment %} product id and active status {% endcomment %}
+              {% if product.is_active %}
+                <div class="circle green">
+                  {{ product.id }}
+                </div>
+              {% else %}
+                <div class="circle red">
+                  {{ product.id }}
+                </div>
+              {% endif %}
+            </div>
+            <div class="products__table--cell">
+              {% comment %} Product name {% endcomment %}
+              {{ product.name }}
+              {% if product.get_recently_created %}
+                <div class="new">
+                  New !
+                </div>
+              {% endif %}
+            </div>
+            {% comment %} Product category {% endcomment %}
+            <div class="products__table--cell">{{ product.category.name|truncatechars:20 }}</div>
+            {% comment %} Product tags count {% endcomment %}
+            <div class="products__table--cell">{{ product.tags.count }}</div>
+            {% comment %} Product brand {% endcomment %}
+            <div class="products__table--cell">{{ product.brand }}</div>
+            {% comment %} Product img count {% endcomment %}
+            <div class="products__table--cell">
+              {% if product.get_all_active_images %}
+                {{ product.get_all_active_images }}
+              {% else %}
+                <i class="fa fa-times-circle"></i>
+              {% endif %}
+            </div>
+            {% comment %} If product on sale {% endcomment %}
+            <div class="products__table--cell">
+              {% if product.get_sale_price_is_lower_than_store_price %}
+                <i class="fa fa-check-circle"></i>
+              {% else %}
+                <i class="fa fa-times-circle"></i>
+              {% endif %}
+            </div>
+            {% comment %} Products units variations count {% endcomment %}
+            <div class="products__table--cell">
+              {{ product.get_all_inventory.count }}
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+      {% comment %} Control Pagination {% endcomment %}
+      {% if products.paginator.num_pages %}
+        {% if not products.paginator.num_pages == 1 %}
+          <div class="pagination">
+            <div class="pagination__navigation">
+              {% if products.has_previous and not products.has_next %}
+                <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to previous page results">
+                  <i class="fas fa-chevron-left"></i>
+                </a>
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              {% elif products.has_next and not products.has_previous %}
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+                <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to next page results">
+                  <i class="fas fa-chevron-right"></i>
+                </a>
+              {% elif products.has_next and products.has_previous %}
+                <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to previous page results">
+                  <i class="fas fa-chevron-left"></i>
+                </a>
+                <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to next page results">
+                  <i class="fas fa-chevron-right"></i>
+                </a>
+              {% else %}
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              {% endif %}
+            </div>
+            <div class="pagination__location">
+              Page <span>{{ products.number }}</span> of {{ products.paginator.num_pages }}
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+    {% else %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          You are not authorized to view this page.
+        </h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+        window.location.replace(window.location.origin + "/personnel/products_table/");
+      }
+    });
+  </script>
+{% endblock %}

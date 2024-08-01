@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .btn i {
+      margin-right: 0 !important;
+    }
+
+    .search__navbar {
+      background-color: transparent !important;
+    }
+
+    .search__container {
+      width: 100% !important;
+    }
+
+    .search__input {
+      padding: 0.5em 0 !important;
+      width: 100% !important;
+    }
+
+    .search__input input {
+      border: 1px solid #363636 !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Units Table{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <section class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          Stock units All
+        </h1>
+      </section>
+      {% comment %} Search product type by input {% endcomment %}
+      <div class="search__navbar">
+        <div class="search__container">
+          <form class="search__input" id="search-all">
+            {% csrf_token %}
+            <input type="text" name="search_query" placeholder="Search by SKU or UPC ..." id="sort-selector">
+            <button type="submit" id="search-btn" aria-label="Search" class="btn btn__search">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% if inventories %}
+        <div class="data__main--inventories">
+          {% for inventory in inventories %}
+            <a href="{% url 'product_inventory_details' pk=inventory.product.pk inventory_pk=inventory.id %}"
+                aria-label="Go to product inventories details" class="data__main--inventory data__main--link">
+              <span>
+                {% if inventory.is_active %}
+                <i class="fa fa-check-circle"></i> (Active)
+                {% else %}
+                <i class="fa fa-times-circle"></i> (Inactive)
+                {% endif %}
+              </span>
+              <div>
+                <strong>SKU: </strong>
+                {{ inventory.sku }}
+              </div>
+              <div>
+                <strong>UPC: </strong>
+                {{ inventory.upc }}
+              </div>
+              <div>
+                <strong>Options: </strong>
+                <br>
+                {{ inventory.get_all_attribute_values_str }}
+              </div>
+              <div>
+                <strong>Promo: </strong>
+                {% for promo in active_now_promotions %}
+                  {% if inventory in promo.products_inventory_in_promotion.all %}
+                    <i class="fa fa-check-circle"></i> (Active Promo)
+                  {% else %}
+                    <i class="fa fa-times-circle"></i> (Inactive)
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <div>
+                <strong>Price: </strong>
+                <table>
+                  <tr>
+                    <th>Retail</th>
+                    <th>Store</th>
+                    <th>Sale</th>
+                  </tr>
+                  <tr>
+                    <td>$ {{ inventory.retail_price }}</td>
+                    <td>$ {{ inventory.store_price }}</td>
+                    <td>
+                      {% if not inventory.store_price == inventory.sale_price %}
+                        <div class="data__accent--sale">$ {{ inventory.sale_price }}</div>
+                      {% else %}
+                        <div>$ {{ inventory.sale_price }}</div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div>
+                {% if inventory.stock %}
+                  {% if inventory.stock.units < 50 and inventory.stock.units >= 25 %}
+                    <div class="data__accent--yellow">
+                      <strong>Units left: {{ inventory.stock.units }}</strong>
+                    </div>
+                  {% elif inventory.stock.units < 25 and inventory.stock.units >= 10 %}
+                    <div class="data__accent--orange">
+                      <strong>Units left: {{ inventory.stock.units }}</strong>
+                    </div>
+                  {% elif inventory.stock.units < 10 and inventory.stock.units >= 0 %}
+                    <div class="data__accent--redish">
+                      <strong>Units left: {{ inventory.stock.units }}</strong>
+                    </div>
+                  {% elif inventory.stock.units == 0 %}
+                    <div class="data__accent--red">
+                      <strong>Units left: {{ inventory.stock.units }}</strong>
+                    </div>
+                  {% else %}
+                    <div class="data__accent--green">
+                      <strong>Units left: {{ inventory.stock.units }}</strong>
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <div class="data__accent--red">
+                    <strong>Stock not found</strong>
+                  </div>
+                {% endif %}
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+        <div>
+          {% comment %} Control Pagination {% endcomment %}
+          {% if inventories.paginator.num_pages %}
+            {% if not inventories.paginator.num_pages == 1 %}
+              <div class="pagination">
+                <div class="pagination__navigation">
+                  {% if inventories.has_previous and not inventories.has_next %}
+                    <a href="?page={{ inventories.previous_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to previous page results">
+                      <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-right"></i>
+                    </div>
+                  {% elif inventories.has_next and not inventories.has_previous %}
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <a href="?page={{ inventories.next_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to next page results">
+                      <i class="fas fa-chevron-right"></i>
+                    </a>
+                  {% elif inventories.has_next and inventories.has_previous %}
+                    <a href="?page={{ inventories.previous_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to previous page results">
+                      <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a href="?page={{ inventories.next_page_number }}" class="pagination__navigation--btn"
+                      aria-label="Go to next page results">
+                      <i class="fas fa-chevron-right"></i>
+                    </a>
+                  {% else %}
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <div class="pagination__navigation--fake">
+                      <i class="fas fa-chevron-right"></i>
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="pagination__location">
+                  Page <span>{{ inventories.number }}</span> of {{ inventories.paginator.num_pages }}
+                </div>
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% else %}
+        <strong> No Units found </strong>
+      {% endif %}
+    {% else %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          You are not authorized to delete categories
+        </h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+        window.location.replace(window.location.origin + "/personnel/product_inventories_table/");
+      }
+    });
+  </script>
+{% endblock %}

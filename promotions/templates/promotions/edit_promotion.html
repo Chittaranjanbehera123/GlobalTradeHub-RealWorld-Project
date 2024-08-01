@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Edit Promo{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Limit access for customers {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <form method="POST" class="dashboard__form promo__form">
+        <h1 class="dashboard__main--name">Edit Promotion</h1>
+        {% csrf_token %}
+        {% for field in form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            {{ field.label_tag }}
+            {{ field }}
+          {% endif %}
+        {% endfor %}
+        {% comment %} Form buttons {% endcomment %}
+        <div class="form__btns accent">
+          <a href="{% url 'promotions_list' %}" aria-label="Go to Promotions page" class="btn btn__cancel">
+            <i class="fas fa-arrow-circle-left"></i>
+            Cancel
+          </a>
+        <button type="submit" class="btn btn__add">
+          <i class="fas fa-save"></i>
+          Save Changes
+        </button>
+      </div>
+    </form>
+    {% else %}
+      <div class="dashboard__main">
+        <h1>You are not authorized to access this page</h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $(function () {
+        $('#id_active').checkboxradio();
+      });
+      // add break before label for="is_active"
+      $('label[for="id_active"]').before('<br>');
+      //add bread after input="is_active"
+      $('#id_active').after('<br>');
+      //remove form control from input "is_active" to prevent overflow
+      $('#id_active').removeClass('form-control');
+      $('#id_start_date').datepicker({
+        changeMonth: true,
+        changeYear: true,
+        dateFormat: 'yy-mm-dd',
+      });
+      $('#id_end_date').datepicker({
+        changeMonth: true,
+        changeYear: true,
+        dateFormat: 'yy-mm-dd',
+      });
+      $('#id_products_inventory_in_promotion').select2(
+        {
+          placeholder: "Select a sku",
+          allowClear: true,
+        }
+      );
+    });
+  </script>
+{% endblock %}

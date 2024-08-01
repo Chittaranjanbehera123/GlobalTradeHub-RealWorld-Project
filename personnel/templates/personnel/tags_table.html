@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .btn i {
+      margin-right: 0 !important;
+    }
+
+    .search__navbar {
+      background-color: transparent !important;
+    }
+
+    .search__container {
+      width: 100% !important;
+    }
+
+    .search__input {
+      padding: 0.2em 0 !important;
+      width: 100% !important;
+    }
+
+    .search__input input {
+      border: 1px solid #363636 !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Tags Table{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Accessible only vy personnel {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          All Tags
+        </h1>
+        {% comment %} Add new tag button {% endcomment %}
+        <a href="{% url 'add_tag' %}" aria-label="Go to add new tag page" class="btn btn-primary btn__add">
+          <i class="fas fa-plus-circle"></i>
+          Add New Tag
+        </a>
+      </div> 
+      <div class="brand__table">
+        {% comment %} Search tag by input {% endcomment %}
+        <div class="search__navbar">
+          <div class="search__container">
+            <form class="search__input" id="search-all">
+              {% csrf_token %}
+              <input type="text" name="search_query" placeholder="Search..." id="sort-selector">
+              <button type="submit" id="search-btn" aria-label="Search" class="btn btn__search">
+                <i class="fas fa-search"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="brand__table--row table__titles">
+          <div class="brand__table--cell">Name</div>
+          <div class="brand__table--cell">Active</div>
+          <div class="brand__table--cell">Products</div>
+        </div>
+        {% for tag in tags %}
+          <a class="brand__table--row brand__table--link" href="{% url 'tag_detail' tag_pk=tag.id %}" aria-label="Go to Tag detail page">
+            <div class="brand__table--cell">
+              {{ tag.name }}
+            </div>
+            <div class="brand__table--cell">
+              {% if tag.is_active %}
+                <i class="fa fa-check-circle"></i>
+              {% else %}
+                <i class="fa fa-times-circle"></i>
+              {% endif %}
+            </div>
+            <div class="brand__table--cell">
+              {{ tag.products.count }} products
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+      {% comment %} Control Pagination {% endcomment %}
+      {% if tags.paginator.num_pages %}
+        {% if not tags.paginator.num_pages == 1 %}
+          <div class="pagination">
+            <div class="pagination__navigation">
+              {% if tags.has_previous and not tags.has_next %}
+                <a href="?page={{ tags.previous_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to previous page results">
+                  <i class="fas fa-chevron-left"></i>
+                </a>
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              {% elif tags.has_next and not tags.has_previous %}
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+                <a href="?page={{ tags.next_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to next page results">
+                  <i class="fas fa-chevron-right"></i>
+                </a>
+              {% elif tags.has_next and tags.has_previous %}
+                <a href="?page={{ tags.previous_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to previous page results">
+                  <i class="fas fa-chevron-left"></i>
+                </a>
+                <a href="?page={{ tags.next_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to next page results">
+                  <i class="fas fa-chevron-right"></i>
+                </a>
+              {% else %}
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              {% endif %}
+            </div>
+            <div class="pagination__location">
+              Page <span>{{ tags.number }}</span> of {{ tags.paginator.num_pages }}
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+    {% else %}
+      {% comment %} User is a customer {% endcomment %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          You are not authorized to view this page.
+        </h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+        window.location.replace(window.location.origin + "/personnel/brands_table/");
+      }
+    });
+  </script>
+{% endblock %}

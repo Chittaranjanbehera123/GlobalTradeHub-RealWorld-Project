@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Brand{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Accessible only to personnel {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <div class="dashboard__main dashboard__form">
+        <h1 class="dashboard__main--name">{{ brand.name }}</h1>
+        <div class="status__activity">
+          {% if brand.is_active %}
+            <i class="fa fa-check-circle"></i> (Active)
+          {% else %}
+            <i class="fa fa-times-circle"></i> (Inactive)
+          {% endif %}
+        </div>
+        {% comment %} Brand details data {% endcomment %}
+        <div class="dashboard__main--info">
+          {% if brand.products.all %}
+            <div>
+              Product with this brand: <strong>{{ brand.products.count }}</strong>
+            </div>
+            <div class="dashboard__main--list">
+              {% for product in brand.products.all %}
+                <a class="dashboard__main--list--item" href="{% url 'product_detail_full' pk=product.id %}" aria-label="Go to product detail page">
+                  <i class="fa fa-times" aria-hidden="true"></i>
+                  {% if product.is_active %}
+                    <i class="fa fa-check-circle"></i>
+                  {% else %}
+                    <i class="fa fa-times-circle"></i>
+                  {% endif %}
+                  {{ product.name }}
+                  <i class="fa fa-external-link" aria-hidden="true"></i>
+                </a>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <div>
+            <strong>Description: </strong>
+            <div>{{ brand.description }}</div>
+          </div>
+        </div>
+        <div class="form__btns accent">
+          <a class="btn btn__edit" href="{% url 'edit_brand' brand_pk=brand.pk %}" aria-label="Go to edit brand form">
+            <i class="fa fa-pencil"></i>
+            Edit Brand
+          </a>
+          {% comment %} Delete brand Accessable only to Admin {% endcomment %}
+          {% if request.user.profile.role.id == 3 %}
+            <a class="btn  btn__delete" href="{% url 'delete_brand' brand_pk=brand.pk %}"  aria-label="Go to delete brand form">
+              <i class="fa fa-trash"></i>
+              Delete Brand
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      {% comment %} User is a customer {% endcomment %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          You are not authorized to view this page.
+        </h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

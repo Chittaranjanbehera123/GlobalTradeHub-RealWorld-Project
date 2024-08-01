@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Create Promo Email{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <form method="POST" class="dashboard__form email__form">
+        <h1 class="dashboard__main--name">Create New Customer Email</h1>
+        {% csrf_token %}
+        {% for field in form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            {{ field.label_tag }}
+            {{ field }}
+          {% endif %}
+        {% endfor %}
+        <div class="form__btns accent">
+          <a href="{% url 'promotions_list' %}" aria-label="Go to Promotions page" class="btn btn__cancel">
+            <i class="fas fa-arrow-circle-left"></i>
+            Go to promos
+          </a>
+          <button type="submit" class="btn btn__add">
+            <i class="fa fa-plus-circle"></i>
+            Send Email
+          </button>
+        </div>
+      </form>
+    {% else %}
+      <div class="dashboard__main">
+        <h1>You are not authorized to access this page</h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

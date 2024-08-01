@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+    .btn__small {
+      font-size: 0.9rem;
+      padding: 0.2em 0.5rem;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}All Promos{% endblock %}
+
+{% block content %}
+  <div class="promotions">
+  {% comment %} Limit access for customers {% endcomment %}
+  {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+    <section class="promotion__header">
+      <h1 class="dashboard__main--name" >Promotions</h1>
+      {% comment %} Accessable only to Admin {% endcomment %}
+      {% if request.user.profile.role.id == 3 %}
+        <div class="promotions__add">
+          <a href="{% url 'add_promotion' %}" class="btn btn-primary btn__add promotions__add--btn" aria-label="Add promotion">
+            <i class="fa fa-plus-circle"></i>
+            Add Promotion
+          </a>
+        </div>
+      {% endif %}
+    </section>
+    {% comment %} If there are any promotions {% endcomment %}
+    {% if promotions %}
+    {% comment %} Promotions table {% endcomment %}
+      <div class="promotions__table">
+        <div class="promotion title">
+          <strong class="promotion__title--name">Name</strong>
+          <strong>Now</strong>
+          <strong>Start</strong>
+          <strong>End</strong>
+          <strong>Active</strong>
+          <strong>Code</strong>
+        </div>
+        {% comment %} Get all promotions {% endcomment %}
+        {% for promotion in promotions %}
+          <section class="promotion cell" data-id="{{ promotion.id }}">
+            <h2 class="promotion__title">{{ promotion.name }}</h2>
+            <p class="promotion__now">
+              {% if promotion.is_active_now %}
+                <i class="fa fa-check-circle"></i>
+              {% else %}
+                <i class="fa fa-times-circle"></i>
+              {% endif %}
+            </p>
+            <p class="promotion__date--start">{{ promotion.start_date|date:"d.m.Y" }}</p>
+            <p class="promotion__date--end">{{ promotion.end_date|date:"d.m.Y" }}</p>
+            <p class="promotion__status">
+              {% if promotion.active %}
+                <i class="fa fa-check-circle"></i>
+              {% else %}
+                <i class="fa fa-times-circle"></i>
+              {% endif %}
+            </p>
+            <p class="promotion__code">{{ promotion.promotion_code }}</p>
+            <div class="promotion__products hidden">
+              {% comment %} Accessable only to Admin {% endcomment %}
+              <div class="promotion__products--list">
+                {% if request.user.profile.role.id == 3 %}
+                  <div class="promotion__btns">
+                    <a href="{% url 'edit_promotion' pk=promotion.id %}" class="btn btn__edit btn__small" aria-label="Edit promotion">
+                      <i class="fa fa-pencil"></i>
+                      Edit
+                    </a>
+                    <button type="button" class="btn btn__delete btn__small" data-bs-toggle="modal" data-bs-target="#exampleModal" data-delete="{{ promotion.id }}">
+                      <i class="fa fa-trash"></i>
+                      Delete
+                    </button>
+                  </div>
+                {% endif %}
+                {% comment %} Units in promotions {% endcomment %}
+                {% if promotion.products_inventory_in_promotion.all %}
+                  {% for product_inventory in promotion.products_inventory_in_promotion.all %}
+                    <a class="promotion__product" data-attr="{{ product_inventory.id }}"
+                        href="{% url 'product_inventory_details' pk=product_inventory.product.pk inventory_pk=product_inventory.id %}"
+                        aria-label="Go to product inventories details">
+                      <strong>{{ product_inventory.sku }}</strong>
+                      <div>{{ product_inventory.product.name }}</div>
+                      {% if product_inventory.attribute_values %}
+                        {% for value in product_inventory.get_attribute_values %}
+                          <strong>{{ value.attribute_value }}</strong>
+                        {% endfor %}
+                      {% endif %}
+                      <i class="fa fa-external-link" aria-hidden="true"></i>
+                    </a>
+                  {% endfor %}
+                {% else %}
+                  <p class="promotion__products empty">No products in this promotion</p>
+                {% endif %}
+              </div>
+            </div>
+          </section>
+        {% endfor %}
+        {% comment %} Control Pagination {% endcomment %}
+        {% if promotions.paginator.num_pages %}
+          {% if not promotions.paginator.num_pages == 1 %}
+            <div class="pagination">
+              <div class="pagination__navigation">
+                {% if promotions.has_previous and not promotions.has_next %}
+                  <a href="?page={{ promotions.previous_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to previous page results">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-right"></i>
+                  </div>
+                {% elif promotions.has_next and not promotions.has_previous %}
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-left"></i>
+                  </div>
+                  <a href="?page={{ promotions.next_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to next page results">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                {% elif promotions.has_next and promotions.has_previous %}
+                  <a href="?page={{ promotions.previous_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to previous page results">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                  <a href="?page={{ promotions.next_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to next page results">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                {% else %}
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-left"></i>
+                  </div>
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-right"></i>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="pagination__location">
+                Page <span>{{ promotions.number }}</span> of {{ promotions.paginator.num_pages }}
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="">
+        <strong>No promotions found.</strong>
+      </div>
+    {% endif %}
+  {% endif %}
+  {% comment %} Modal for promo deletion {% endcomment %}
+  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Delete Promo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to delete this promotion?
+        </div>
+        <div class="modal-footer form__btns accent">
+          <button type="button" class="btn btn__cancel" data-bs-dismiss="modal">
+            <i class="fas fa-arrow-circle-left"></i>
+            Cancel
+          </button>
+          <button type="button" class="btn btn__delete confirm__delete" >
+            <i class="fas fa-save"></i>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function(){
+      $('.promotion').each(function(){
+        let promotion = $(this);
+        let promotionId = promotion.data('id');
+        console.log(promotionId);
+        // close modal reusable function
+        promotion.on('click', function(){
+          // find .promotion__products for this
+          let products = promotion.find('.promotion__products');
+          if(products.hasClass('hidden')){
+            products.removeClass('hidden');
+            // find delete button by data-delete="{{ promotion.id }}"
+            let deleteBtn = promotion.find('[data-delete="' + promotionId + '"]');
+            console.log(deleteBtn);
+            // find .confirm__delete from #exampleModal
+            let confirmDelete = $('#exampleModal').find('.confirm__delete');
+            console.log('confirmDelete', confirmDelete);
+            deleteBtnDataDelete = deleteBtn.data('delete');
+            console.log('deleteBtnDataDelete', deleteBtnDataDelete);
+            //add data-id attribute to confirmDelete
+            confirmDelete.attr('data-id', deleteBtnDataDelete);
+          } else {
+            products.addClass('hidden');
+          }
+        });
+      });
+      // delete promotion
+      $('.confirm__delete').on('click', function(){
+        let promotionId = $(this).data('id');
+        $.ajax({
+          url: "{% url 'delete_promotion' %}",
+          type: 'POST',
+          data: {
+            'promotion_id': promotionId,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+          },
+          success: function(data){
+            // close modal
+            $('#exampleModal').modal('hide');
+            // remove promotion from page
+            $('.promotion[data-id="' + promotionId + '"]').remove();
+          },
+          error: function(data){
+            $('#messages-notes').remove();
+            $('.bag').before('<div class="message-container" id="messages-notes">' +
+              '<div class="message-container__message">' +
+              '<p class="message-container__message--text">Something went wrong</p>' +
+              '</div>' +
+              '</div>');
+            // remove the message block after 3 seconds
+            setTimeout(() => {
+              $('#messages-notes').remove();
+            }, 3000);
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}

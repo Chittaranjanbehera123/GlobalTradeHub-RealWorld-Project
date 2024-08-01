@@ -1,0 +1,759 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .new {
+      display: inline-block;
+      padding: 0.2em 0.5em;
+      border-radius: 0.2em;
+    }
+
+    .fa-external-link {
+      margin-left: 0.2em;
+      margin-right: 0 !important;
+    }
+
+    .btn__link--internal {
+      background-color: #151422;
+      background-color: #381e73;
+      color: #ffffff;
+      padding: 0.3em 0.4em 0.35em 0.5em !important;
+      border-radius: 0.2em;
+    }
+
+    .data__main--link--tag {
+      margin-bottom: 0.5em;
+      display: inline-block;
+    }
+
+    .btn__link--internal:hover {
+      background-color: #151422;
+      color: #ffffff;
+    }
+
+    .data__accent--sale {
+      border-radius: 0.2em;
+    }
+
+    .dashboard__form {
+      max-width: 100%;
+      background-color: #ffffffb3 !important;
+    }
+    .dashboard__main--name {
+      padding-top: 1em;
+    }
+
+    .dashboard__main a {
+    top: -1rem;
+    right: 0rem;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Product Full Data{% endblock %}
+
+{% block content %}
+  <div class="dashboard dashboard__form">
+  {% comment %} Limit access for customers {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <div class="dashboard__main">
+        {% comment %} Product name {% endcomment %}
+        <h1 class="dashboard__main--name">
+          {{ product.name }}
+          {% if product.get_recently_created %}
+            <span class="new">
+              New !
+            </span>
+          {% endif %}
+        </h1>
+        {% comment %} Product data {% endcomment %}
+        <div>
+          <strong>ID: </strong>{{ product.id }}
+          {% if product.is_active %}
+            <i class="fa fa-check-circle"></i> (Active)
+          {% else %}
+            <i class="fa fa-times-circle"></i> (Inactive)
+          {% endif %}
+        </div>
+        {% comment %} Link to check how the product presented in store {% endcomment %}
+        <a href="{% url 'product_detail' pk=product.pk %}" aria-label="Go to {{ product.name }} in the shop" target="_blank"
+          class="btn btn__redirect btn__link">
+          View in store
+          <i class="fa fa-external-link"></i>
+        </a>
+        {% comment %} Render product buttons {% endcomment %}
+        <div class="product__admin--btns">
+          <a class="btn btn__edit" href="{% url 'edit_product' pk=product.pk %}">
+            <i class="fa fa-pencil"></i>
+            Edit product
+          </a>
+          <a class="btn btn__delete" href="{% url 'delete_product' pk=product.pk %}">
+            <i class="fa fa-trash"></i>
+            Delete product
+          </a>
+        </div>
+      </div>
+      <div class="data__main">
+        <div class="data__main--section">
+          <strong>Description: </strong>
+          <p>{{ product.description }}</p>
+        </div>
+        <div class="data__main--section">
+          <strong>Category: </strong>
+          <a href="{% url 'categories_table' %}" aria-label=" Go to categories page" class="data__main--link cursor btn__link--internal">
+            {{ product.category.name }}
+            <i class="fa fa-external-link"></i>
+          </a>
+        </div>
+        <div class="data__main--section">
+          <strong>Brand: </strong>
+          <a href="{% url 'brand_detail' brand_pk=product.brand.id %}" aria-label=" Go to {{ product.brand }} page" class="data__main--link cursor btn__link--internal">
+            {{ product.brand }}
+            <i class="fa fa-external-link"></i>
+          </a>
+        </div>
+        <div class="data__main--section">
+          <strong>Tags: {{ product.get_tags.count }}</strong>
+          <div>
+            {% for tag in product.get_tags %}
+              <a href="{% url 'tag_detail' tag_pk=tag.id %}" aria-label=" Go to {{ tag.name }} page" class="data__main--link data__main--link--tag cursor btn__link--internal">
+                {{ tag.name }}
+                <i class="fa fa-external-link"></i>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% comment %} Images section {% endcomment %}
+        <div class="data__main--section">
+          <strong>Images: <span  id="images-count">{{ get_all_images.count }}</span></strong>
+          <a class="btn btn-primary btn__add" data-id="{% url 'product_detail' pk=product.pk %}" data-bs-toggle="modal"
+            data-bs-target="#exampleModal">
+            <i class="fas fa-plus-circle"></i>
+            Add new image
+          </a>
+          <div class="data__main--images">
+            {% for image in get_all_images %}
+                <div class="data__main--link card__image">
+                  <div class="card__image--title">
+                    {% if image.is_active and image.default_image %}
+                      <div>Default and active</div>
+                    {% elif image.is_active %}
+                      <div>Active</div>
+                    {% elif image.default_image %}
+                      <div>Default and Inactive</div>
+                    {% else %}
+                      <div>Inactive</div>
+                    {% endif %}
+                    <a href="#" aria-label="Go to edit image modal" class="data__main--link image__settings btn__edit" data-id="{{ image.id }}">
+                      edit
+                    </a>
+                    <a href="#" aria-label="Go to delete image modal" class="data__main--link image__delete btn__delete" data-id="{{ image.id }}">
+                      delete
+                    </a>
+                  </div>
+                  <div class="image__container">
+                    <img src="{{ image.image.url }}" alt="{{ image.alt_text }}" data-id="{{ image.id }}" data-default="{{ image.default_image }}" data-active="{{ image.is_active }}">
+                  </div>
+                </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% comment %} Units section {% endcomment %}
+        <div class="data__main--section">
+          <strong>Product inventories: {{ product.get_all_inventory.count }}</strong>
+          <a class="btn btn-primary btn__add" href="{% url 'add_product_inventory_details' pk=product.pk %}">
+            <i class="fas fa-plus-circle"></i>
+            Add new unit
+          </a>
+          <div class="data__main--inventories">
+            {% for inventory in product.get_all_inventory %}
+              <a href="{% url 'product_inventory_details' pk=product.pk inventory_pk=inventory.id %}" aria-label="Go to product inventories details" class="data__main--inventory data__main--link cursor">
+                <span>
+                  {% if inventory.is_active %}
+                  <i class="fa fa-check-circle"></i> (Active)
+                  {% else %}
+                  <i class="fa fa-times-circle"></i> (Inactive)
+                  {% endif %}
+                </span>
+                <div>
+                  <strong>SKU: </strong>
+                  {{ inventory.sku }}
+                </div>
+                <div>
+                  <strong>UPC: </strong>
+                  {{ inventory.upc }}
+                </div>
+                <div>
+                  <strong>Options: </strong>
+                  <br>
+                  {{ inventory.get_all_attribute_values_str }}
+                </div>
+                <div>
+                  <strong>Promo: </strong>
+                  {% if inventory in product_inventory_in_promo_now %}
+                    <i class="fa fa-check-circle"></i> (Active Promo)
+                  {% else %}
+                    <i class="fa fa-times-circle"></i> (Inactive)
+                  {% endif %}
+                </div>
+                <div>
+                  <strong>Price: </strong>
+                  <table>
+                    <tr>
+                      <th>Retail</th>
+                      <th>Store</th>
+                      <th>Sale</th>
+                    </tr>
+                    <tr>
+                      <td>$ {{ inventory.retail_price }}</td>
+                      <td>$ {{ inventory.store_price }}</td>
+                      <td>
+                        {% if not inventory.store_price == inventory.sale_price %}
+                          <div class="data__accent--sale">$ {{ inventory.sale_price }}</div>
+                        {% else %}
+                          <div>$ {{ inventory.sale_price }}</div>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                <div>
+                  {% if inventory.stock %}
+                    {% if inventory.stock.units < 50 and inventory.stock.units >= 25 %}
+                      <div class="data__accent--yellow">
+                        <strong>Units left: {{ inventory.stock.units }}</strong>
+                      </div>
+                    {% elif inventory.stock.units < 25 and inventory.stock.units >= 10 %}
+                      <div class="data__accent--orange">
+                        <strong>Units left: {{ inventory.stock.units }}</strong>
+                      </div>
+                    {% elif inventory.stock.units < 10 and inventory.stock.units >= 0 %}
+                      <div class="data__accent--redish">
+                        <strong>Units left: {{ inventory.stock.units }}</strong>
+                      </div>
+                    {% elif inventory.stock.units == 0 %}
+                      <div class="data__accent--red">
+                        <strong>Units left: {{ inventory.stock.units }}</strong>
+                      </div>
+                    {% else %}
+                      <div class="data__accent--green">
+                        <strong>Units left: {{ inventory.stock.units }}</strong>
+                      </div>
+                    {% endif %}
+                  {% else %}
+                    <div class="data__accent--red">
+                      <strong>Stock not found</strong>
+                    </div>
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% comment %} Modal {% endcomment %}
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Add new image</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              
+              <div class="form-group">
+                <label for="image-product-id">Product ID</label>
+                <input type="text" class="form-control" id="image-product-id" value="{{ product.pk }}" readonly>
+              </div>
+              <div class="form-group">
+                <label for="image-url">Image</label>
+                <input type="file" class="form-control-file" id="image-url" name="image">
+              </div>
+              <div class="form-group">
+                <label for="image-alt-text">Alt text</label>
+                <input type="text" class="form-control" id="image-alt-text" name="alt_text">
+              </div>
+              <div class="form-group">
+                <label for="image-default">Default image</label>
+                <input type="checkbox" class="" id="image-default" name="default_image">
+              </div>
+              <div class="form-group">
+                <label for="image-active">Active</label>
+                <input type="checkbox" class="" id="image-active" name="is_active">
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-outline-primary btn__add" id="modal-form">Save changes</button>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          You are not authorized to delete categories
+        </h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function() {
+      let imageCount;
+      let file;
+      let imgUrl;
+      // Add image preview to image modal form:
+      const imagePreview = (e) => {
+        // temporarily disable the event handler
+        e.preventDefault();
+        // take the image from the file input and show it in the preview
+        file = e.target.files[0];
+        imgUrl = URL.createObjectURL(file);
+        // if there are any
+        // create a new image element
+        let previewDiv = document.createElement('div');
+        previewDiv.classList.add('preview');
+        previewDiv.style.width = '100px';
+        previewDiv.style.height = '100px';
+        previewDiv.style.border = '1px solid #ccc';
+        previewDiv.style.position = 'relative';
+        previewDiv.style.borderRadius = '0 0.7rem 0 0';
+        previewDiv.style.alignSelf = 'start';
+        // previewDiv.style.overflow = 'hidden';
+        let img = document.createElement('img');
+        img.classList.add('image__preview');
+        // add src attribute to the image element
+        img.src = imgUrl;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.objectPosition = 'center';
+        previewDiv.appendChild(img);
+        // create close button
+        let closeButton = $('<i class="fas fa-times-circle"></i>');
+        closeButton.css({
+            position: 'absolute',
+            top: '-8px',
+            right: '-8px',
+            cursor: 'pointer',
+            color: '#ccc',
+        });
+        previewDiv.appendChild(closeButton[0]);
+        // replace the fas-paperclip with the new image
+        let labelBackup = $(e.target).prev().clone();
+        if ($(e.target).parent().find('.preview').length) {
+            $(e.target).parent().find('.preview').remove();
+        }
+        $(e.target).parent().append(previewDiv);
+        // $(e.target).parent().find('i').replaceWith(previewDiv);
+        // add event handler to the close button
+        closeButton.on('click', () => {
+            // remove the preview image
+            $(e.target).parent().find('div.preview').remove();
+            // clear the file input
+            $(e.target).val('');        
+            $(e.target).on('change', imagePreview);
+        });
+      };
+
+      $('#image-url').on('change', imagePreview);
+      $('#image-url').on('click', () => {
+        //delete border
+        $('#image-url').css('border', 'none');
+      });
+      const addImage = function () {
+                // change title of the modal
+        $('.modal-title').text('Add new image');
+        // check if the #image-url is not empty and #image-alt-text is not empty
+        if ($('#image-url').val() != '' && $('#image-alt-text').val() != '') {
+          // disable modal button
+          $('#modal-form').prop('disabled', true);
+          // add loading icon
+          $('#modal-form').html('<i class="fas fa-spinner fa-spin"></i>');
+          let fileInput = $('#image-url');
+          // append to modal form csrfToken}
+          $('#image-url').off('change');
+          let csrfToken = '{{ csrf_token }}';
+          fileInput.type = 'file';
+          fileInput.accept = 'image/*';
+          let formData = new FormData();
+          //Image is default
+          if ($('#image-default').is(':checked')) {
+            formData.append('default_image', 'true');
+          } else {
+            formData.append('default_image', 'false');
+          }
+          //Image is active
+          if ($('#image-active').is(':checked')) {
+            formData.append('is_active', 'true');
+          } else {
+            formData.append('is_active', 'false');
+          }
+          formData.append('alt_text', $('#image-alt-text').val());
+          formData.append('product_id', $('#image-product-id').val());
+          formData.append('image', file);
+          formData.append('csrfmiddlewaretoken', csrfToken);
+          // send the data to the server
+          $.ajax({
+            url: "{% url 'add_product_image' %}",
+            type: "POST",
+            processData: false,
+            contentType: false,
+            cache: false,
+            data: formData,
+            success: function(data) {
+              // add new
+              // get .data__main--images
+              let images = $('.data__main--images');
+              // append <div>
+              let imageCard = $('<div></div>');
+              // add class to a
+              imageCard.addClass('data__main--link');
+              imageCard.addClass('card__image');
+              //append new div 
+              let divImageTitle = $('<div></div>');
+              divImageTitle.addClass('card__image--title');
+              let divImageTitleText = $('<div></div>');
+              // add text to div
+              if (data.new_image_is_active && data.new_image_default_image) {
+                divImageTitleText.text('Default and active image');
+              } else if (data.new_image_is_active && !data.new_image_default_image) {
+                divImageTitleText.text('Active');
+              } else if (!data.new_image_is_active && data.new_image_default_image) {
+                divImageTitleText.text('Default and not active image');
+              } else if (!data.new_image_is_active && !data.new_image_default_image) {
+                divImageTitleText.text('Inactive');
+              }
+              let aSettings = $('<a></a>');
+              aSettings.addClass('data__main--link');
+              aSettings.addClass('image__settings');
+              aSettings.addClass('btn__edit');
+              aSettings.attr('href', '#');
+              aSettings.attr('data-id', data.new_image_pk);
+              //add text settings to a
+              aSettings.text('edit');
+              //add event on click to aSettings
+              aSettings.on('click', editImage);
+              //create delete button
+              let aDelete = $('<a></a>');
+              aDelete.addClass('data__main--link');
+              aDelete.addClass('image__delete');
+              aDelete.addClass('btn__delete');
+              aDelete.attr('href', '#');
+              aDelete.attr('data-id', data.new_image_pk);
+              aDelete.text('delete');
+              //add event on click to aDelete
+              aDelete.on('click', deleteImage);
+              // apend to divImageTitle
+              divImageTitle.append(divImageTitleText);
+              divImageTitle.append(aSettings);
+              divImageTitle.append(aDelete);
+              // create image div
+              let imgDiv = $('<div></div>');
+              imgDiv.addClass('image__container');
+              // append img to imgDiv
+              let img = $('<img>');
+              // add src attribute to img
+              img.attr('src', data.new_image_image_url);
+              //add data-id to img
+              img.attr('data-id', data.new_image_pk);
+              // add alt
+              img.attr('alt', data.new_image_alt_text);
+              imgDiv.append(img);
+              //append div and imgDiv to a
+              imageCard.append(divImageTitle);
+              imageCard.append(imgDiv);
+              images.append(imageCard);
+              $('#image-alt-text').val('');
+              // empty the file input in #image-alt-text
+              // enable modal button
+              $('#modal-form').prop('disabled', false);
+              // remove loading icon
+              $('#modal-form').html('Save changes');
+              //remove spinner
+              $('#modal-form').find('.spinner').remove();
+              $('#image-url').val('');
+              $('#image-url').on('change', imagePreview);
+              $('#image-default').prop('checked', false);
+              $('#image-active').prop('checked', false);
+              // Add +1 to the number of images
+              imageCount = parseInt($('#images-count').text());
+              $('#images-count').text(imageCount+1);
+              // Close modal
+              $('#exampleModal').modal('hide');
+            },
+            error: function(data) {
+              $('.fa-spinner').remove();
+              $('#messages-notes').remove();
+              $('.bag').before('<div class="message-container" id="messages-notes">' +
+                '<div class="message-container__message">' +
+                '<p class="message-container__message--text">Something went wrong</p>' +
+                '</div>' +
+                '</div>');
+              // remove the message block after 3 seconds
+              setTimeout(() => {
+                $('#messages-notes').remove();
+              }, 3000);
+            }
+          });
+        } else {
+          $('.modal-title').text('Please select all options!');
+          // set highlight effect for .modal-title
+          $('.modal-title').effect('highlight', {color: '#ff0000'}, 1000);
+          // check wich input is empty and set the focus on it
+          if ($('#image-url').val() == '' && $('#exampleModal').find('div.preview').length == 0) {
+            $('#image-url').focus();
+            $('#image-url').css('border', '1px solid #ff0000');
+          } else if ($('#image-alt-text').val() == '') {
+            $('#image-alt-text').focus();
+          }
+        }
+      };
+      $('#modal-form').on('click', addImage);
+      const editImage = function(e) {
+        let imageId = $(e.target).data('id');
+        let imageAltText = $('img[data-id="' + imageId + '"]').attr('alt');
+        let imageDefault = $('img[data-id="' + imageId + '"]').attr('data-default');
+        let imageActive = $('img[data-id="' + imageId + '"]').attr('data-active');
+        let imageSrc = $('img[data-id="' + imageId + '"]').attr('src');
+        // set the values to the inputs
+        $('#image-alt-text').val(imageAltText);
+        if (imageDefault == 'True') {
+          $('#image-default').prop('checked', true);
+        } else {
+          $('#image-default').prop('checked', false);
+        }
+        if (imageActive == 'True') {
+          $('#image-active').prop('checked', true);
+        } else {
+          $('#image-active').prop('checked', false);
+        }
+        let previewDiv = document.createElement('div');
+        previewDiv.classList.add('preview');
+        previewDiv.style.width = '100px';
+        previewDiv.style.height = '100px';
+        previewDiv.style.border = '1px solid #ccc';
+        previewDiv.style.position = 'relative';
+        previewDiv.style.borderRadius = '0 0.7rem 0 0';
+        previewDiv.style.alignSelf = 'start';
+        // previewDiv.style.overflow = 'hidden';
+        let img = document.createElement('img');
+        img.classList.add('image__preview');
+        // add src attribute to the image element
+        
+        img.src = imageSrc;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.objectPosition = 'center';
+        previewDiv.appendChild(img);
+        // create close button
+        let closeButton = $('<i class="fas fa-times-circle"></i>');
+        closeButton.css({
+            position: 'absolute',
+            top: '-8px',
+            right: '-8px',
+            cursor: 'pointer',
+            color: '#ccc',
+        });
+        previewDiv.appendChild(closeButton[0]);
+        // replace the fas-paperclip with the new image
+        let labelBackup = $(e.target).prev().clone();
+        $('#image-url').parent().append(previewDiv);
+        // $(e.target).parent().find('i').replaceWith(previewDiv);
+        // add event handler to the close button
+        closeButton.on('click', () => {
+            // remove the preview image
+            $('#image-url').parent().find('div.preview').remove();
+            // clear the file input
+            $(e.target).val('');        
+            $(e.target).on('change', imagePreview);
+        });
+        $('#image-url').on('change', imagePreview);
+        $('#image-url').on('click', () => {
+          //delete border
+          $('#image-url').css('border', 'none');
+        });
+        // change id for this button:
+        // check if any other #modal-form exist
+        if ($('#modal-form').length > 0) {
+          $('#modal-form').off('click');
+          $('#modal-form').attr('id', 'modal-form-edit');
+        } else if ($('#modal-form-delete').length > 0) {
+          $('#modal-form-delete').off('click');
+          $('#modal-form-delete').attr('id', 'modal-form-edit');
+        }
+        // change title of the modal
+        $('.modal-title').text('Edit Image');
+        
+        $('#modal-form-edit').on('click', (e) => {
+        // check if the #image-url is not empty and #image-alt-text is not empty
+        if ($('#image-alt-text').val() != '' && $('#exampleModal').find('div.preview').length != 0) {
+          // disable modal button
+          $('#modal-form-edit').prop('disabled', true);
+          // add loading icon
+          $('#modal-form-edit').html('<i class="fas fa-spinner fa-spin"></i>');
+          let fileInput = $('#image-url');
+          // append to modal form <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+          $('#image-url').off('change');
+          let csrfToken = '{{ csrf_token }}';
+          fileInput.type = 'file';
+          fileInput.accept = 'image/*';
+          let formData = new FormData();
+          //Image is default
+          if ($('#image-default').is(':checked')) {
+            formData.append('default_image', 'true');
+          } else {
+            formData.append('default_image', 'false');
+          }
+          //Image is active
+          if ($('#image-active').is(':checked')) {
+            formData.append('is_active', 'true');
+          } else {
+            formData.append('is_active', 'false');
+          }
+          formData.append('alt_text', $('#image-alt-text').val());
+          formData.append('product_id', $('#image-product-id').val());
+          formData.append('image', file);
+          formData.append('image_id', imageId);
+          formData.append('csrfmiddlewaretoken', csrfToken);
+          // send the data to the server
+            $.ajax({
+              type: 'POST',
+              url: "{% url 'edit_product_image' %}",
+              processData: false,
+              contentType: false,
+              cache: false,
+              data: formData,
+              success: function(data) {
+              // enable modal button
+                $('#modal-form-edit').prop('disabled', false);
+                // remove loading icon
+                $('#modal-form-edit').html('Save changes');
+                //remove spinner
+                $('#modal-form-edit').find('.spinner').remove();
+                // update the image alt text
+                $('img[data-id="' + imageId + '"]').attr('alt', data.update_alt_text);
+                // update the image src
+                $('img[data-id="' + imageId + '"]').attr('src', data.update_image_url);
+                // update the image default
+                if (imageDefault == true) {
+                  $('img[data-id="' + imageId + '"]').attr('data-default', 'True');
+                } else {
+                  $('img[data-id="' + imageId + '"]').attr('data-default', 'False');
+                }
+                // update the image active
+                if (imageActive == true) {
+                  $('img[data-id="' + imageId + '"]').attr('data-active', 'True');
+                } else {
+                  $('img[data-id="' + imageId + '"]').attr('data-active', 'False');
+                }
+                divImageTitleText = $('img[data-id="' + imageId + '"]').parent().prev().find('div');
+                if (data.update_is_active && data.update_default_image) {
+                  divImageTitleText.text('Default and active image');
+                } else if (data.update_is_active && !data.update_default_image) {
+                  divImageTitleText.text('Active');
+                } else if (!data.update_is_active && data.update_default_image) {
+                  divImageTitleText.text('Default and not active image');
+                } else if (!data.update_is_active && !data.update_default_image) {
+                  divImageTitleText.text('Inactive');
+                }
+                $('#image-url').on('change', imagePreview);
+                // close the modal
+                $('#exampleModal').modal('hide');
+                // reload the page
+              },
+              error: function(data) {
+                $('.fa-spinner').remove();
+                $('#messages-notes').remove();
+                $('.bag').before('<div class="message-container" id="messages-notes">' +
+                  '<div class="message-container__message">' +
+                  '<p class="message-container__message--text">Something went wrong</p>' +
+                  '</div>' +
+                  '</div>');
+                // remove the message block after 3 seconds
+                setTimeout(() => {
+                  $('#messages-notes').remove();
+                }, 3000);
+              }
+            });
+          } else {
+            $('.modal-title').text('Please select all options');
+            // set highlight effect for .modal-title
+            $('.modal-title').effect('highlight', {color: '#ff0000'}, 1000);
+            // check wich input is empty and set the focus on it
+            if ($('#image-url').val() == '' && $('#exampleModal').find('div.preview').length == 0) {
+              $('#image-url').focus();
+              $('#image-url').css('border', '1px solid #ff0000');
+            } else if ($('#image-alt-text').val() == '') {
+              $('#image-alt-text').focus();
+            }
+          }
+        });
+        $('#exampleModal').modal('show');
+      };
+      // delete image function
+      const deleteImage = function(e) {
+        e.preventDefault();
+        let imageId = $(e.target).data('id');
+        let confirmDelete = confirm('Are you sure you want to delete this image?');
+        if (confirmDelete) {
+          $.ajax({
+            type: 'POST',
+            url: "{% url 'delete_product_image' %}",
+            data: {
+              'image_id': imageId,
+              'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(data) {
+              // remove the image from the page
+              $('img[data-id="' + imageId + '"]').parent().parent().remove();
+              //Remove -1 from the image count
+              imageCount = parseInt($('#images-count').text());
+              $('#images-count').text(imageCount-1);
+            },
+            error: function(data) {
+              $('.fa-spinner').remove();
+              $('#messages-notes').remove();
+              $('.bag').before('<div class="message-container" id="messages-notes">' +
+                '<div class="message-container__message">' +
+                '<p class="message-container__message--text">Something went wrong</p>' +
+                '</div>' +
+                '</div>');
+              // remove the message block after 3 seconds
+              setTimeout(() => {
+                $('#messages-notes').remove();
+              }, 3000);
+            }
+          });
+        }
+      };
+      // edit image on click
+      $('.image__settings').on('click', editImage);
+      // delete image on click
+      $('.image__delete').on('click', deleteImage);
+      //reset modal form
+      const myModalEl = document.getElementById('exampleModal');
+      myModalEl.addEventListener('hide.bs.modal', event => {
+        $('#exampleModal').find('div.preview').remove();
+        $('#exampleModal').find('.modal-title').text('Add new image');
+        // check if #modal-form-edit exists
+        if ($('#modal-form-edit').length) {
+          $('#modal-form-edit').off('click', editImage);
+          $('#modal-form-edit').attr('id', 'modal-form');
+          $('#modal-form').on('click', addImage);
+          $('#exampleModal').find('div.preview').remove();
+          $('#exampleModal').find('#image-alt-text').val('');
+          $('#exampleModal').find('#image-url').val('');
+          $('#exampleModal').find('#image-default').prop('checked', false);
+          $('#exampleModal').find('#image-active').prop('checked', false);
+        }
+      });
+    });
+  </script>
+{% endblock %}

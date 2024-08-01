@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .btn i {
+      margin-right: 0 !important;
+    }
+
+    .search__navbar {
+      background-color: transparent !important;
+    }
+
+    .sort__container {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1em;
+      padding-bottom: 0.5em;
+    }
+
+    .sort__input {
+      width: 100%;
+      max-width: 54rem;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      grid-template-areas: "sort sort sort sort"
+                            "sort sort sort sort";
+      gap: 0.5em;
+    }
+
+    .btn__search {
+      color: white;
+      display: flex;
+      width: 100%;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn__search i, .btn__add i {
+      margin-right: 0.3em !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Stock Table{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Limit access for customers {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <div class="dashboard__main">
+          <h1 class="dashboard__main--name">Stock</h1>
+      </div>
+      {% comment %} Summary of units without stock {% endcomment %}
+      <div class="data__main--stock">
+        <div class="products__stock--no">
+          <div class="products__stock--no--title">
+            You have <strong>{{ products_without_stock.count }}</strong> Units without stock
+          </div>
+          {% comment %} show-hide button for units without stock {% endcomment %}
+          {% if products_without_stock.count > 0 %}
+            <button id="without-stock" class="btn btn__add">
+              <i class="fas fa-chevron-down"></i>
+              Show
+            </button>
+            {% comment %} dropdown table for produccts without stock {% endcomment %}
+            <div class="hidden nostock__units" id="without-stock-table">
+              {% for unit in products_without_stock %}
+                <a class="nostock__unit" href="{% url 'product_inventory_details' pk=unit.product.pk inventory_pk=unit.id %}" aria-label="Go to product inventories details">
+                  <div class="products__stock--no--unit--sku">
+                    {{ unit.sku }}
+                    <i class="fa fa-external-link" aria-hidden="true"></i>
+                  </div>
+                  <div class="products__stock--no--unit--name">{{ unit.product.name }}</div>
+                </a>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        {% comment %} Search product type by input {% endcomment %}
+        <div class="search__navbar">
+          {% comment %} Form with radio buttons set to get units from classmethods {% endcomment %}
+          <div class="sort__container">
+            <form class="sort__input" id="sort-all">
+              {% csrf_token %}
+              {% comment %} <div> {% endcomment %}
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="submit" name="sort" value="all" id="all" class="btn-check option in_modal">
+                <label for="all" class="btn btn__search">All units</label>
+              </div>
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="submit" name="sort" value="inconsistency" id="inconsistency" class="btn-check option in_modal">
+                <label for="inconsistency" class="btn btn__search">Irregularity</label>
+              </div>
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="submit" name="sort" value="stock-50" id="stock-50" class="btn-check option in_modal">
+                <label for="stock-50" class="btn btn__search"><i class="fas fa-less-than"></i> 50 units</label>
+              </div>
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="submit" name="sort" value="stock-20" id="stock-20" class="btn-check option in_modal">
+                <label for="stock-20" class="btn btn__search"><i class="fas fa-less-than"></i> 20 units</label>
+              </div>
+              {% comment %} </div>
+              <div> {% endcomment %}
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="submit" name="sort" value="stock-10" id="stock-10" class="btn-check option in_modal">
+                <label for="stock-10" class="btn btn__search"><i class="fas fa-less-than"></i> 10 units</label>
+              </div>
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="submit" name="sort" value="stock-0" id="stock-0" class="btn-check option in_modal">
+                <label for="stock-0" class="btn btn__search">Out of stock</label>
+              </div>
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="submit" name="sort" value="high-sales-lack-units" id="high-sales-lack-units" class="btn-check option in_modal">
+                <label for="high-sales-lack-units" class="btn btn__search"><i class="fas fa-greater-than"></i> sales</label>
+              </div>
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="radio" name="sort" value="low-sales" id="low-sales" class="btn-check option in_modal">
+                <label for="low-sales" class="btn btn__search"><i class="fas fa-less-than"></i> sales</label>
+              {% comment %} </div> {% endcomment %}
+              </div>
+            </form>
+          </div>
+        </div>
+        {% comment %} Stock table data {% endcomment %}
+        <div class="stock__table--container">
+          <div class="stock__summary">
+            {% if all_stock %}
+              {% if all_stock.count %}
+                {{ all_stock.count }} units found
+              {% else %}
+                {{ all_products_count}} units in stock
+              {% endif %}
+            {% else %}
+              No units found
+            {% endif %}
+          </div>
+          <table class="stock__table">
+            <tr>
+              <th>SKU</th>
+              <th>Alert</th>
+              <th>Left</th>
+              <th>Bought</th>
+              <th>Sold</th>
+              <th>Checked</th>
+              <th>Inconcistency</th>
+            </tr>
+            {% for stock in all_stock %}
+            {% if stock in  stocks_without_units %}
+              <tr style="background-color: #ffc0cb;">
+            {% else %}
+              <tr>
+            {% endif %}
+              <td class="stock__sku">
+                {% if stock.product_inventory.sku %}
+                <a class="stock__item--link" aria-label="Go to product inventories details"
+                    href="{% url 'product_inventory_details' pk=stock.product_inventory.product.pk inventory_pk=stock.product_inventory.id %}">
+                      {{ stock.product_inventory.sku }}
+                      <i class="fa fa-external-link" aria-hidden="true"></i>
+                </a>
+                {% else %}
+                  No SKU
+                {% endif %}
+              </td>
+              <td>
+                {% if stock.units < 50 and stock.units >= 25 %}
+                  <div class="data__accent--yellow">
+                    <i class="fa fa-exclamation-triangle"></i>
+                  </div>
+                {% elif stock.units < 25 and stock.units >= 10 %}
+                  <div class="data__accent--orange">
+                    <i class="fa fa-exclamation-triangle"></i>
+                  </div>
+                {% elif stock.units < 10 and stock.units >= 0 %}
+                  <div class="data__accent--redish">
+                    <i class="fa fa-exclamation-triangle"></i>
+                  </div>
+                {% elif stock.units == 0 %}
+                  <div class="data__accent--red">
+                    <i class="fa fa-exclamation-triangle"></i>
+                  </div>
+                {% else %}
+                  <div class="data__accent--green">
+                    <i class="fa fa-exclamation-triangle"></i>
+                  </div>
+                {% endif %}
+              </td>
+              <td>{{ stock.units }}</td>
+              <td>{{ stock.units_variable }}</td>
+              <td>{{ stock.units_sold }}</td>
+              <td>{{ stock.last_checked|date:"d.m.Y" }}</td>
+              <td>
+                {% if stock in stock_inconsistency %}
+                  <div class="data__accent--red">
+                    <i class="fa fa-exclamation-triangle"></i>
+                  </div>
+                {% else %}
+                  <div class="data__accent--green">
+                    <i class="fa fa-exclamation-triangle"></i>
+                  </div>
+                {% endif %}
+              </td>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+      {% comment %} Control Pagination {% endcomment %}
+      {% if all_stock.paginator.num_pages %}
+        {% if not all_stock.paginator.num_pages == 1 %}
+          <div class="pagination">
+            <div class="pagination__navigation">
+              {% if all_stock.has_previous and not all_stock.has_next %}
+                <a href="?page={{ all_stock.previous_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to previous page results">
+                  <i class="fas fa-chevron-left"></i>
+                </a>
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              {% elif all_stock.has_next and not all_stock.has_previous %}
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+                <a href="?page={{ all_stock.next_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to next page results">
+                  <i class="fas fa-chevron-right"></i>
+                </a>
+              {% elif all_stock.has_next and all_stock.has_previous %}
+                <a href="?page={{ all_stock.previous_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to previous page results">
+                  <i class="fas fa-chevron-left"></i>
+                </a>
+                <a href="?page={{ all_stock.next_page_number }}" class="pagination__navigation--btn"
+                  aria-label="Go to next page results">
+                  <i class="fas fa-chevron-right"></i>
+                </a>
+              {% else %}
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="pagination__navigation--fake">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              {% endif %}
+            </div>
+            <div class="pagination__location">
+              Page <span>{{ all_stock.number }}</span> of {{ all_stock.paginator.num_pages }}
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+    {% else %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          You are not authorized to delete categories
+        </h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function() {
+      let btnWithoutStock = $('#without-stock');
+      let tableWithoutStock = $('#without-stock-table');
+      // show table without stock
+      btnWithoutStock.on('click', function() {
+        tableWithoutStock.toggleClass('hidden');
+        // control button text
+        if (tableWithoutStock.hasClass('hidden')) {
+          btnWithoutStock.html('<i class="fas fa-chevron-down"></i> Show');
+        } else {
+          btnWithoutStock.html('<i class="fas fa-chevron-up"></i> Hide');
+        }
+      });
+      if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+        window.location.replace(window.location.origin + "/personnel/stock/");
+      }
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .btn i {
+      margin-right: 0 !important;
+    }
+
+    .search__navbar {
+      background-color: transparent !important;
+      margin-top: 0.5em !important;
+    }
+
+    .search__container {
+      width: 100% !important;
+    }
+
+    .search__input {
+      padding: 0.5em !important;
+      width: 100% !important;
+    }
+
+    .search__input input {
+      border: 1px solid #363636 !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Values{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      <section class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          Product Attributes Value
+        </h1>
+        <a href="{% url 'add_attribute_value' %}" aria-label="Go to add new attribute value" class="btn btn__add">
+          <i class="fas fa-plus-circle"></i>
+          Add New Attribute Value
+        </a>
+      </section>
+      {% comment %} Search product type by input {% endcomment %}
+      <div class="search__navbar">
+        <div class="search__container">
+          <form class="search__input" id="search-all">
+            {% csrf_token %}
+            <input type="text" name="search_query" placeholder="Search by attribute name ..." id="sort-selector">
+            <button type="submit" id="search-btn" aria-label="Search" class="btn btn__search">
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% if attribute_values %}
+        <div class="types__all">
+          {% for value in attribute_values %}
+            <div class="type__details attributes">
+              <strong>{{ value.attribute_value }} ({{ value.product_attribute }})</strong>
+              <div class="type_attributes">
+                {{ value.attributevalues.count }} units with this attribute value
+              </div>
+              <div class="type__buttons">
+                <a href="{% url 'edit_attribute_value' pk=value.id %}"
+                    aria-label="Edit attribute value page" class="btn btn__edit">
+                  <i class="fas fa-edit"></i>
+                  Edit
+                </a>
+                {% if request.user.profile.role.id == 3 %}
+                  <a href="{% url 'delete_attribute_value' pk=value.id %}"
+                      aria-label="Delete attribute value page" class="btn btn__delete">
+                    <i class="fas fa-trash-alt"></i>
+                    Delete
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        {% comment %} Control Pagination {% endcomment %}
+        {% if attribute_values.paginator.num_pages %}
+          {% if not attribute_values.paginator.num_pages == 1 %}
+            <div class="pagination">
+              <div class="pagination__navigation">
+                {% if attribute_values.has_previous and not attribute_values.has_next %}
+                  <a href="?page={{ attribute_values.previous_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to previous page results">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-right"></i>
+                  </div>
+                {% elif attribute_values.has_next and not attribute_values.has_previous %}
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-left"></i>
+                  </div>
+                  <a href="?page={{ attribute_values.next_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to next page results">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                {% elif attribute_values.has_next and attribute_values.has_previous %}
+                  <a href="?page={{ attribute_values.previous_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to previous page results">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                  <a href="?page={{ attribute_values.next_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to next page results">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                {% else %}
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-left"></i>
+                  </div>
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-right"></i>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="pagination__location">
+                Page <span>{{ attribute_values.number }}</span> of {{ attribute_values.paginator.num_pages }}
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <strong>No attribute values found</strong>
+      {% endif %}
+    {% else %}
+      <h1>You are not authorized to view this page</h1>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+        window.location.replace(window.location.origin + "/personnel/values/");
+      }
+    });
+  </script>
+{% endblock %}

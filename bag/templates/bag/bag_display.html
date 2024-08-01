@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+    }
+
+    .bag__promotion {
+      display: flex !important;
+      padding-bottom: 0.5em;
+    }
+
+    input.bag__promotion--input {
+      border: 2px solid #ccc;
+      font-size: 1rem !important;
+      margin-right: 1rem !important;
+    }
+
+    .btn__edit {
+      width: 50%;
+    }
+
+    .data__promo--total {
+      font-weight: 900;
+      padding-bottom: 1em;
+    }
+
+    .btn i {
+    margin-right: 0;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Bag{% endblock %}
+
+{% block content %}
+  {% comment %} Bag Template {% endcomment %}
+  <div class="bag" id="bag">
+    {% comment %} add alret message at the top about loyalty program {% endcomment %}
+    <a href="#bag-summary" aria-label="Go to summary" class="bag__title">
+      <i class="fas fa-chevron-down"></i>
+      Ready to purchase!?
+    </a>
+    <div class="alert alert-success">
+      {% if user.is_authenticated %}
+        {% if request.user.profile.subscription %}
+          <p>You are currently enrolled in the loyalty program. Please, check your email for your coupon code.</p>
+        {% else %}
+          <p>If you want to be enrolled in the loyalty program, please, sign up for subscription.</p>
+        {% endif %}
+      {% else %}
+        <p>If you want to be our member of loyalty programm, you need to login and sign up for subscription.</p>
+      {% endif %}
+    </div>
+    {% if request.user.is_authenticated %}
+      {% if bag_items %}
+        <div id="bag-table">
+          <div class="bag__items">
+            {% comment %} Table header {% endcomment %}
+            <div class="bag__items--titles">
+              <div class="bag__items--title image">Image</div>
+              <div class="bag__items--title">Product</div>
+              <div class="bag__items--title">Price</div>
+              <div class="bag__items--title">Quantity</div>
+              <div class="bag__items--title">Total</div>
+              <div class="bag__items--title">
+                <i class="fa fa-trash-o" aria-hidden="true"></i>
+              </div>
+            </div>
+            {% for item in bag_items %}
+            {% comment %} One item {% endcomment %}
+              <div class="bag__item" data-attr="{{ item.product_inventory.pk }}" data-stock="{{ item.units }}">
+                {% comment %} Product's image {% endcomment %}
+                <div class="bag__item--image image">
+                  {% if item.product_inventory.product.images.all %}
+                    <img src="{{ item.product_inventory.product.get_main_image }}"
+                      alt="Cover image for {{ item.product_inventory.product.name }}">
+                  {% else %}
+                    <img src="{% static 'images/default_product_image.png' %}" alt="default product Image">
+                  {% endif %}
+                </div>
+                <a href="{% url 'product_detail' pk=item.product_inventory.product.id %}"
+                  aria-label="Go to {{ item.product_inventory.product.name }}" class="bag__item--link">
+                  {% comment %} Product's name {% endcomment %}
+                  <div class="bag__product--name">
+                    {{ item.product_inventory.product.name|truncatechars:25 }}
+                    <i class="fa fa-external-link" aria-hidden="true"></i>
+                  </div>
+                  {% comment %} Product's values {% endcomment %}
+                  <div class="bag__item--values">
+                    {% if item.product_inventory.get_attribute_values.all == 1 %}
+                      {% comment %} Only one value is listed {% endcomment %}
+                      {% for value in item.product_inventory.get_attribute_values %}
+                        <div>{{ value.attribute_value }}</div>
+                      {% endfor %}
+                    {% else %}
+                      {% comment %} More than 1 values are listed {% endcomment %}
+                      {% for value in item.product_inventory.get_attribute_values %}
+                        <div class="bag__item--value">{{ value.attribute_value }}</div>
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+                </a>
+                {% comment %} Product's price {% endcomment %}
+                <div>${{ item.product_inventory.sale_price }}</div>
+                {% comment %} Quantity control {% endcomment %}
+                <div class="bag__item--quantity">
+                  <button class="btn btn-outline-primary bag__item--quantity--minus" data-id="{{ item.product_inventory.pk }}" aria-label="Reduce item quantity">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  {% comment %} Product's current quantity {% endcomment %}
+                  <div class="bag__item--quantity--main">{{ item.quantity }}</div>
+                  <button class="btn btn-outline-primary bag__item--quantity--plus" data-id="{{ item.product_inventory.pk }}" aria-label="Add item quantity">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+                {% comment %} Product's total price {% endcomment %}
+                <div class="bag__item--total">{{ item.product_item_total }}</div>
+                {% comment %} Remove this product option {% endcomment %}
+                <div class="bag__item--remove" data-id="{{ item.product_inventory.pk }}">
+                  <i class="fas fa-trash-alt"></i>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          {% comment %} Bag's summary {% endcomment %}
+          <div class="bag__summary" id="bag-summary">
+            {% comment %} Clean bag fully {% endcomment %}
+            <div class="bag__clean">
+              <div class="btn btn__delete" id="bag-clean" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                <i class="fa fa-trash-o" aria-hidden="true"></i>
+                Empty bag
+              </div>
+            </div>
+            <div>
+              <strong>Total sum:</strong>
+              <div class="bag__items--costs">{{ total }}</div>
+            </div>
+            <div>
+              <strong>Products number:</strong>
+              <div class="bag__items--count">{{ product_count }}</div>
+            </div>
+            {% if user.is_authenticated and request.user.profile.subscription %}
+              <div class="alert alert-danger">
+                <p>Remember to reenter the coupon code if you update your bag.</p>
+              </div>
+            {% endif %}
+            {% comment %} add input to add promotions code + button {% endcomment %}
+            <form class="bag__promotion">
+              <input type="text" class="bag__promotion--input form-control" placeholder="Promotion code" required>
+              <button class="btn btn__redirect" id="bag-promotion">
+                Apply code
+              </button>
+            </form>
+            {% comment %} Checkout button {% endcomment %}
+            <a href="{% url 'payment' %}" class="btn btn__add">
+              <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+              Checkout
+            </a>
+          </div>
+        </div>
+        {% comment %} Modal {% endcomment %}
+          <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Bag Warning!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                Do you want to empty your bag?
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                <button type="button" class="btn btn-primary confirm__email--require btn_ok_in_modal" data-id="" id="clean-confirm">
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        {% comment %} If bag is empty {% endcomment %}
+        <div class="bag__items--empty">
+          <p class="bag__items--empty--text">Your bag is empty</p>
+        </div>
+      {% endif %}
+    {% else %}
+      <h1>Please, log in to add items to your bag</h1>
+      <div>
+        <a href="{% url 'account_signup' %}" class="btn bag__account">SignUp</a>
+        <a href="{% url 'account_login' %}" class="btn bag__account">Login</a>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      // reusable function for alert message
+      const messagesAlertData = function(data) {
+        if (data) {
+          if ($('#messages-notes').length) {
+            $('#messages-notes').remove();
+          }
+          $('.bag').before('<div class="message-container" id="messages-notes">' +
+            '<div class="message-container__message">' +
+              '<p class="message-container__message--text">' + data + '</p>' +
+              '</div>' +
+            '</div>');
+        }
+        setTimeout(() => {
+          $('#messages-notes').remove();
+        }, 3000);
+      };
+      const messagesAlertError = function() {
+        if ($('#messages-notes').length) {
+          $('#messages-notes').remove();
+        }
+        $('.fa-spinner').remove();
+        $('.bag').before('<div class="message-container" id="messages-notes">' +
+        '<div class="message-container__message">' +
+        '<p class="message-container__message--text">Something went wrong</p>' +
+        '</div>' +
+        '</div>');
+        setTimeout(() => {
+          $('#messages-notes').remove();
+        } , 3000);
+      };
+      // check if there quantity is not more that units in stock
+      const stockChecker =function() {
+        //get data-stock from bag__item
+        var stock = $(this).data('stock');
+        //get value of each bag__item--quantity--main
+        var quantityChosen = $(this).find('.bag__item--quantity--main').text();
+        // check if the text is changed
+        quantityChosen = parseInt(quantityChosen);
+        if (quantityChosen >= stock) {
+          // disable plus button
+          $(this).find('.bag__item--quantity--plus').addClass('disabled');
+        } else if (quantityChosen < stock) {
+          $(this).find('.bag__item--quantity--plus').removeClass('disabled');
+        }
+      }; 
+      $('.bag__item').each(stockChecker);
+      // minus quantity
+      $('.bag__item--quantity--minus').each(function () {
+        $(this).click(function (e) {
+          let quantity = $(this).next().text();
+          e.preventDefault();
+          let productInventoryId = $(this).data('id');
+          $(this).parent().append('<i class="fas fa-spinner fa-spin"></i>');
+          $.ajax({
+            url: "{% url 'remove_unit_from_bag' %}",
+            type: 'POST',
+            data: {
+              'product_inventory_id': productInventoryId,
+              'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function (data) {
+              // if .data__promo--total exists -> remove it
+              if ($('.data__promo--total').length) {
+                $('.data__promo--total').remove();
+              }
+              // update shopping bag in navbar
+              $('#shopping-bag-count').text(data.product_count);
+              // alert the message
+              messagesAlertData(data.message_alert);
+              // update the total cost
+              $('.bag__items--costs').text(data.total);
+              // update the total quantity
+              $('.bag__items--count').text(data.product_count);
+              // check if data.quantity is 0:
+              if (data.quantity == 0) {
+                $('.bag__item[data-attr="' + productInventoryId + '"]').hide();
+              } else {
+                $(this).parent().next().text(data.total);
+                // get element with data-attr = productInventoryId
+                // change the quantity
+                $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--quantity--main').text(data.quantity);
+                // change the total for the item
+                $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--total').text(data.product_item_total);
+                //get data-stock from bag__item
+                var stock = $('.bag__item[data-attr="' + productInventoryId + '"]').data('stock');
+                //check if data.quantity is more than stock
+                if (data.quantity >= stock) {
+                  $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--quantity--plus').addClass('disabled');
+                } else if (data.quantity < stock) {
+                  $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--quantity--plus').removeClass('disabled');
+                }
+              }
+              $('.fa-spinner').remove();
+              if ($('.bag__items--count').text() == 0) {
+                $('#bag-table').hide();
+                $('#bag').append('<div class="bag__items--empty">' +
+                  '<p class="bag__items--empty--text">Your bag is empty</p>' +
+                  '</div>');
+              }
+            },
+            error: function (data) {
+              messagesAlertError();
+            }
+          });
+        });
+      });
+
+      // plus quantity
+      $('.bag__item--quantity--plus').each(function () {
+        $(this).click(function (e) {
+          let quantity = $(this).next().text();
+          //convert to integer
+          quantity = parseInt(quantity);
+          e.preventDefault();
+          let productInventoryId = $(this).data('id');
+          $(this).parent().append('<i class="fas fa-spinner fa-spin"></i>');
+          $.ajax({
+            url: "{% url 'add_unit_to_bag' %}",
+            type: 'POST',
+            data: {
+              'product_inventory_id': productInventoryId,
+              'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function (data) {
+              // if .data__promo--total exists -> remove it
+              if ($('.data__promo--total').length) {
+                $('.data__promo--total').remove();
+              }
+              // update shopping bag in navbar
+              $('#shopping-bag-count').text(data.product_count);
+              messagesAlertData(data.message_alert);
+              // change the quantity
+              $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--quantity--main').text(data.quantity);
+              // change the total for the item
+              $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--total').text(data.product_item_total);
+              // update the total cost
+              $('.bag__items--costs').text(data.total);
+              // update the total quantity
+              $('.bag__items--count').text(data.product_count);
+              //get data-stock from bag__item
+              var stock = $('.bag__item[data-attr="' + productInventoryId + '"]').data('stock');
+              //check if data.quantity is more than stock
+              if (data.quantity >= stock) {
+                $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--quantity--plus').addClass('disabled');
+              } else if (data.quantity < stock) {
+                $('.bag__item[data-attr="' + productInventoryId + '"]').find('.bag__item--quantity--plus').removeClass('disabled');
+              }
+              $('.fa-spinner').remove();
+            },
+            error: function (data) {
+              messagesAlertError();
+            }
+          });
+        });
+      });
+      // remove item from bag
+      $('.bag__item--remove').each(function () {
+        // if .data__promo--total exists -> remove it
+        if ($('.data__promo--total').length) {
+          $('.data__promo--total').remove();
+        }
+        $(this).click(function (e) {
+          e.preventDefault();
+          let productInventoryId = $(this).data('id');
+          $(this).append('<i class="fas fa-spinner fa-spin"></i>');
+          $.ajax({
+            url: "{% url 'remove_all_item_units_from_bag' %}",
+            type: 'POST',
+            data: {
+              'product_inventory_id': productInventoryId,
+              'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function (data) {
+              // update shopping bag in navbar
+              $('#shopping-bag-count').text(data.product_count);
+              // add div to the page above the bag class with the message
+              messagesAlertData(data.message_alert);
+              // update the total cost
+              $('.bag__items--costs').text(data.total);
+              // update the total quantity
+              $('.bag__items--count').text(data.product_count);
+              // check if data.quantity is 0:
+              $('.bag__item[data-attr="' + productInventoryId + '"]').hide();
+              $('.fa-spinner').remove();
+              if ($('.bag__items--count').text() == 0) {
+                $('#bag-table').hide();
+                $('#bag').append('<div class="bag__items--empty">' +
+                  '<p class="bag__items--empty--text">Your bag is empty</p>' +
+                  '</div>');
+              }
+            },
+            error: function (data) {
+              messagesAlertError();
+            }
+          });
+        });
+      });
+      // remove all items from bag
+      $('#clean-confirm').on('click', (e) => {
+        e.preventDefault();
+        // close modal
+        $('#exampleModal').modal('hide');
+        $(this).parent().append('<i class="fas fa-spinner fa-spin"></i>');
+        $.ajax({
+          url: "{% url 'remove_all_bag' %}",
+          type: 'POST',
+          data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+          },
+          success: function (data) {
+            // if .data__promo--total exists -> remove it
+            if ($('.data__promo--total').length) {
+              $('.data__promo--total').remove();
+            }
+            // hide clean bag button
+            $('#bag-clean').hide();
+            // update shopping bag in navbar
+            $('#shopping-bag-count').text(data.product_count);
+            // add div to the page above the bag class with the message
+            if (data.message_alert) {
+              messagesAlertData(data.message_alert);
+            }
+            $('#bag-table').hide();
+            $('#bag').append('<div class="bag__items--empty">' +
+              '<p class="bag__items--empty--text">Your bag is empty</p>' +
+              '</div>');
+            // update the total cost
+            $('.bag__items--costs').text(data.total);
+            // update the total quantity
+            $('.bag__items--count').text(data.product_count);
+          },
+          error: function (data) {
+            messagesAlertError();
+          }
+        });
+      });
+      // promo:
+      $('#bag-promotion').on('click', (e) => {
+        e.preventDefault();
+        // get the value from input bag__promotion--input
+        let promoCode = $('.bag__promotion--input').val();
+        // create AJAX call
+        $.ajax({
+          url: "{% url 'apply_promo_code' %}",
+          type: 'POST',
+          data: {
+            'promo_code': promoCode,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+          },
+          success: function (data) {
+            // emty the input
+            $('.bag__promotion--input').val('');
+            // check if .data__promo--total exists:
+            if ($('.data__promo--total').length) {
+              $('.data__promo--total').replaceWith('<div class="data__promo--total">Total after confirming ' + promoCode + ' promo code: ' + data.total_promo + '</div>');
+            } else {
+              // add the total cost
+            $('.bag__promotion--input').parent().after(
+              '<div class="data__promo--total">Total after confirming promo ' + promoCode + ' code: ' + data.total_promo + '</div>'
+              );
+            }
+          },
+          error: function (data) {
+            let couponError = 'There is no promo code with this name';
+            messagesAlertData(couponError);
+            $('.bag__promotion--input').parent().after(
+              '<div class="data__promo--total">' + couponError + '</div>'
+              );
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}

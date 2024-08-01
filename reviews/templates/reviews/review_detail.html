@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Review Added{% endblock %}
+
+{% block content %}
+  <div class="review">
+    <h1>Review on {{ review.product.name }}</h1> 
+    <div class="review__details">
+      {% if request.user == review.user %}
+        <div class="warning__msg alert alert-success">
+          Your review is recorded, if you want to render your review, you will need to contact our support service.
+          It is important to provide the best service and the best experience for our customers.
+        </div>
+      {% endif %}
+      {% comment %} Review Details {% endcomment %}
+      <div class="review__details--data">
+        <span class="review__details--data--rating">
+          {% comment %} Star rating {% endcomment %}
+          {% spaceless %}
+            {% for star in "12345"|make_list %}
+              {% if forloop.counter <= review.rating|add:"0" %}
+                <i class="fas fa-star"></i>
+              {% else %}
+                <i class="far fa-star"></i>
+              {% endif %}
+            {% endfor %}
+          {% endspaceless %}
+        </span>
+      </div>
+      {% comment %} Review comment {% endcomment %}
+      <div class="review__details--data comment">
+        <strong>Comment: </strong>
+        <p class="review__details--data--comment">
+          {% if review.comment %}
+            {{ review.comment }}
+          {% else %}
+            No comment left.
+          {% endif %}
+        </p>
+      </div>
+      {% comment %} Review date {% endcomment %}
+      <div class="review__details--data">
+        <strong>Date: </strong>
+        <span class="review__details--data--date">
+          {{ review.created_at|date }}
+        </span>
+      </div>
+      {% comment %} Review author {% endcomment %}
+      <div class="review__details--data">
+        <strong>Left by: </strong>
+        <span class="review__details--data--user">
+          {{ review.user.username }}
+        </span>
+      </div>
+    </div>
+    {% comment %} Images all {% endcomment %}
+    <div class="review__images">
+      {% for image in images %}
+        <div class="review__image">
+          <img src="{{ image.image_url }}" alt="Review image for {{ review.product.name }} left by {{ review.user }}">
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

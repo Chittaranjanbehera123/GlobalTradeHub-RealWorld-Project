@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <style>
+    label[for="id_is_active"] {
+      margin-top: 0.5em;
+    }
+
+    textarea {
+      margin-bottom: 0 !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Personnel-Edit Product{% endblock %}
+
+{% block content %}
+  <div class="dashboard">
+    {% comment %} Limit access for customers {% endcomment %}
+    {% if request.user.is_authenticated and not request.user.profile.role.id == 1 %}
+      {% comment %} Edit product form {% endcomment %}
+      <form method="POST" class="dashboard__form">
+        {% comment %} Form title {% endcomment %}
+        <h1 class="dashboard__main--name">
+          Edit Product
+        </h1>
+        {% csrf_token %}
+        {% for field in form %}
+          {% if field.is_hidden %}
+            {{ field }}
+          {% else %}
+            {{ field.label_tag }}
+            {{ field }}
+          {% endif %}
+        {% endfor %}
+        {% comment %} Form control buttons {% endcomment %}
+        <div class="form__btns accent">
+          <a href="{% url 'product_detail_full' pk=product.id %}" aria-label="Go to Promotions page" class="btn btn__cancel">
+            <i class="fas fa-arrow-circle-left"></i>
+            Cancel
+          </a>
+          <button type="submit" class="btn btn__add">
+            <i class="fas fa-save"></i>
+            Save Changes
+          </button>
+        </div>
+      </form>
+    {% else %}
+      {% comment %} User isn't personnel {% endcomment %}
+      <div class="dashboard__main">
+        <h1 class="dashboard__main--name">
+          You are not authorized to delete categories
+        </h1>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $(function () {
+        $('#id_is_active').checkboxradio();
+      });
+      $('select').addClass('js-example-basic-single');
+      $('.js-example-basic-single').select2({
+        placeholder: 'Type name to search',
+      });
+      $('#div_id_assigned_to').css('width', '100%');
+    });
+  </script>
+{% endblock %}

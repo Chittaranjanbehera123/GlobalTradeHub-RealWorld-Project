@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    .content__container {
+      justify-content: start !important;
+      align-items: flex-start !important;
+      flex: 1 0 auto !important;
+    }
+  </style>
+{% endblock %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Wishlist{% endblock %}
+
+{% block content %}
+  <div class="wishlist profile" id="wishlist">
+  {% comment %} Wish list of the user {% endcomment %}
+    {% if request.user.is_authenticated %}
+      <h1>Your Wish List</h1>
+      {% comment %} If there are any products {% endcomment %}
+      {% if products %}
+        <div class="wishlist__table" id="wishlist-table">
+          {% comment %} Clean Wishlist fully {% endcomment %}
+          <div class="wishlist__clean">
+            <div class="btn btn__delete wishlist__items--clean" id="wishlist-clean">
+              <i class="fa fa-trash-o" aria-hidden="true"></i>
+              Empty wishlist
+            </div>
+            {% comment %} Dropdown for cleaning bag confirmation {% endcomment %}
+            <div class="wishlist__clean--dropdown hidden" id="wishlist__clean--dropdown">
+              <p class="wishlist__clean--text">Do you want to delete all items from your wishlist?</p>
+              <div class="wishlist__clean--buttons">
+                <button class="wishlist__clean--clean btn btn__delete wishlist__clean--yes" id="clean-confirm"  aria-label="clean wishlist yes button">
+                  Yes
+                </button>
+                <button class="wishlist__clean--clean btn btn__cancel wishlist__clean--no" id="clean-cancel"  aria-label="clean wishlist no button">
+                  No
+                </button>
+              </div>
+            </div>
+          </div>
+          {% comment %} Table of wishlist products {% endcomment %}
+          <div class="wishlist__items">
+            {% for product in products %}
+              {% if product.is_active %}
+                <div class="wishlist__item" data-attr="{{ product.id }}">
+                {% comment %} Product card {% endcomment %}
+                  <a class="wishlist__item--card" href="{% url 'product_detail' pk=product.pk %}" aria-label="Go to {{ product.name }}">
+                    {% if product.get_sale_price_is_lower_than_store_price %}
+                      <div class="wishlist__item--discount">
+                        <img src="{% static 'images/sale.png' %}" alt="sale Image">
+                      </div>
+                    {% endif %}
+                    {% comment %} Image {% endcomment %}
+                    <div class="wishlist__item--image">
+                      {% if product.images.all %}
+                        <img src="{{ product.get_main_image }}" alt="Cover image for {{ product.name }}">
+                      {% else %}
+                        <img src="{% static 'images/default_product_image.png' %}" alt="default product Image">
+                      {% endif %}
+                    </div>
+                    {% comment %} Name {% endcomment %}
+                    <div class="wishlist__item--name">
+                      {{ product.name }}
+                    </div>
+                    {% comment %} Price content {% endcomment %}
+                    <div class="wishlist__item--content">
+                      <div class="wishlist__item--prices">
+                        {% if product.get_out_of_stock %}
+                          <div class="wishlist__item--price price__sale">
+                            <p>Out of stock</p>
+                          </div>
+                        {% elif product.get_same_sale_price %}
+                          {% if product.get_sale_price_is_lower_than_store_price %}
+                            <div class="wishlist__item--price price__regular">
+                              $ {{ product.get_lowest_store_price }}
+                            </div>
+                            <div class="wishlist__item--price price__sale">
+                              $ {{ product.get_lowest_price }}
+                            </div>
+                          {% else %}
+                            <div class="wishlist__item--price">
+                              $ {{ product.get_lowest_price }}
+                            </div>
+                          {% endif %}
+                        {% else %}
+                          {% if product.get_sale_price_is_lower_than_store_price %}
+                            <div class="wishlist__item--price price__regular">
+                              $ {{ product.get_lowest_store_price }} - {{ product.get_highest_store_price }}
+                            </div>
+                            <div class="wishlist__item--price price__sale">
+                              $ {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                            </div>
+                          {% else %}
+                            <div class="wishlist__item--price">
+                              $ {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                            </div>
+                          {% endif %}
+                        {% endif %}
+                      </div>
+                    </div>
+                  </a>
+                  <button class="like btn add wishlist__control" data-id="{{ product.id }}"  aria-label="like button">
+                    <i class="fas fa-heart"></i>
+                  </button>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% comment %} Control Pagination {% endcomment %}
+        {% if products.paginator.num_pages %}
+          {% if not products.paginator.num_pages == 1 %}
+            <div class="pagination">
+              <div class="pagination__navigation">
+                {% if products.has_previous and not products.has_next %}
+                  <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to previous page results">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-right"></i>
+                  </div>
+                {% elif products.has_next and not products.has_previous %}
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-left"></i>
+                  </div>
+                  <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to next page results">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                {% elif products.has_next and products.has_previous %}
+                  <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to previous page results">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                  <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                    aria-label="Go to next page results">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                {% else %}
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-left"></i>
+                  </div>
+                  <div class="pagination__navigation--fake">
+                    <i class="fas fa-chevron-right"></i>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="pagination__location">
+                Page <span>{{ products.number }}</span> of {{ products.paginator.num_pages }}
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <div class="wishlist__empty">
+          <p>You have no items in your wishlist.</p>
+        </div>
+      {% endif %}
+    {% else %}
+    {% comment %} If user logged out, show a message to login {% endcomment %}
+      <div class="wishlist__empty">
+        <p>You have to be logged in to see your wishlist.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      // reusable function for alert message
+      const messagesAlertData = function(data) {
+        if (data) {
+          if ($('#messages-notes').length) {
+            $('#messages-notes').remove();
+          }
+          $('.wishlist').before('<div class="message-container" id="messages-notes">' +
+            '<div class="message-container__message">' +
+              '<p class="message-container__message--text">' + data + '</p>' +
+              '</div>' +
+            '</div>');
+        }
+        setTimeout(() => {
+          $('#messages-notes').remove();
+        }, 3000);
+      };
+      // add-to/remove-from wishlist
+      //loop through .wishlist__control
+      $('.wishlist__control').each(function () {
+        $(this).on('click', function(e) {
+          // check if #messages-notes is present
+          if ($('#messages-notes').length !== 0) {
+            $('#messages-notes').remove();
+          }
+          let product_id = $(this).data('id');
+          // stop propagation to prevent default behavior
+          e.stopPropagation();
+          e.preventDefault();
+          $(this).parent().append('<i class="fas fa-spinner fa-spin"></i>');
+          // AJAX request to add item to the wishlist
+          $.ajax({
+            url: "{% url 'add_remove_product_wishlist_ajax' %}",
+            type: "POST",
+            data: {
+              'product_id': product_id,
+              'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(data) {
+              if (data.product_in_wishlist ==false) {
+                // get the item from the wishlist by data-attr
+                $('.wishlist__item[data-attr="' + product_id + '"]').remove();
+              }
+              $('.fa-spinner').remove();
+              if (data.message_alert) {
+                messagesAlertData(data.message_alert);
+              }
+              setTimeout(() => {
+                $('#messages-notes').remove();
+              }, 3000);
+            },
+            error: function(data) {
+              messagesAlertData(data.message_alert);
+            }
+          });
+        });
+      });
+      // clean the wishlist main button
+      $('#wishlist-clean').on('click', (e) => {
+        e.preventDefault();
+        // add hidden class to the clean wishlist dropdown
+        $('#wishlist__clean--dropdown').toggleClass('hidden');
+      });
+      // cancel clean wishlist
+      $('#clean-cancel').on('click', (e) => {
+        e.preventDefault();
+        $('.wishlist__clean--dropdown').addClass('hidden');
+      });
+      // confirm clean wishlist
+      $('#clean-confirm').on('click', (e) => {
+        e.preventDefault();
+        $(this).parent().append('<i class="fas fa-spinner fa-spin"></i>');
+        $.ajax({
+          url: "{% url 'empty_wishlist_ajax' %}",
+          type: 'POST',
+          data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+          },
+          success: function (data) {
+            $('#wishlist-table').remove();
+            if (data.message_alert) {
+              messagesAlertData(data.message_alert);
+            }
+            if ('.pagination') {
+              $('.pagination').remove();
+            }
+            if ('.wishlist__empty') {
+              $('.wishlist__empty').remove();
+              $('#wishlist').append('<div class="wishlist__empty">' +
+                '<p>You have no items in your wishlist.</p>' +
+                '</div>');
+            }
+          },
+          error: function (data) {
+            messagesAlertData(data.message_alert);
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}
